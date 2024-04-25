@@ -2,7 +2,7 @@ from time import sleep
 
 import numpy as np
 
-FILE_PATH = "./data/g60.in"
+FILE_PATH = "./data/g4.in"
 DEBUG = False
 
 
@@ -12,7 +12,10 @@ class Graph:
         self.g = g
 
     def __add__(self, other):
-        g = np.append(np.append(self.g, other, axis=0), other, axis=1)
+        print(other)
+        print(self.g)
+        g = np.hstack([self.g, other])
+        g = np.vstack([self.g, np.append(other, 0)])
         return Graph(self.n, g)
 
     def __sub__(self, other):
@@ -60,24 +63,48 @@ def r(graph: Graph) -> int:
         print(graph)
         sleep(1)
 
+    # Base case
     if graph.is_empty():
         if DEBUG:
             print("Empty graph")
         return 0
 
+    # R2: Find vertex with two neighbours
+    vt = graph.find_vertex_with_two_neighbours()
+    if DEBUG:
+        print("vt = ", vt)
+    if vt is not None:
+        neighbours = graph.neighbours(vt)
+        u, w = neighbours[0], neighbours[1]
+        if graph.g[u][w] == 1:
+            return 1 + r(graph - graph.neighbours(vt))
+        else:
+            z = np.zeros(graph.n)
+            z[np.delete(graph.neighbours(u), -1)] = 1
+            z[np.delete(graph.neighbours(w), -1)] = 1
+            return 1 + r((graph - graph.neighbours(vt)) + z)
+
+    # R1: Find vertex with one neighbour
+    vn = graph.find_vertex_with_one_neighbour()
+    if DEBUG:
+        print("vn = ", vn)
+    if vn is not None:
+        return 1 + r(graph - graph.neighbours(vn))
+
+    # R0: Find vertex with no neighbours
     v = graph.find_vertex_without_neighbours()
     if DEBUG:
         print("v = ", v)
-    
+
     if v is not None:
         return 1 + r(graph - v)
 
-    # Find vertex with maximum degree
-    u = graph.find_vertex_with_max_degree()
+    # Fallback
+    vm = graph.find_vertex_with_max_degree()
     if DEBUG:
-        print("u = ", u)
-    
-    return max(1 + r(graph - graph.neighbours(u)), r(graph - u))
+        print("vm = ", vm)
+
+    return max(1 + r(graph - graph.neighbours(vm)), r(graph - vm))
 
 
 if __name__ == "__main__":
